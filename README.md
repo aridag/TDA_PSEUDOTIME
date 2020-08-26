@@ -22,3 +22,4 @@ Note that the code is also menat to be used for a grid search (testing differnt 
   - INTRVLS.SEQ number of bins (index is 
   - 
 
+![Minimum Spanning Tree](https://github.com/aridag/TDA_PSEUDOTIME/blob/master/MSTExample.png)
