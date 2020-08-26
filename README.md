@@ -2,6 +2,7 @@
 ## R code for temporal phenotyping via Topological Data Analysis and Pseudo Time 
 
 ### Instruction for running TDA + PTS on the example file [MyData](https://github.com/aridag/TDA_PSEUDOTIME/blob/master/MyDataSim.csv)
+* Note that data are randomly created on the basis of fake ids, fake dates and within real Lab value ranges, thus they don't have any clinical meaning *
 
 1. Upload and pre-processing
 - The example file is in the correct format:
