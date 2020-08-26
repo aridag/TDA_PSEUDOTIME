@@ -10,6 +10,9 @@
 - Create a time line for each subject starting from the first observation (minimum date)
 
 2. Compute Distance Matrix and Function
+- Choose a distance metric (Euclidean or Cosine), defualt is Cosine  
+- Create Lens Functions (Mean, Max, L-infinity centrality, Single Value Decomposition 1st and 2nd compontent)
+- Create Enrichment Function (Time, Single subject IDs, CRP..)
 
 3. Run the TDA - Parameter Setting
 
