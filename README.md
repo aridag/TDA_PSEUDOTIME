@@ -13,6 +13,7 @@
 - Choose a distance metric (Euclidean or Cosine), defualt is Cosine  
 - Create Lens Functions (Mean, Max, L-infinity centrality, Single Value Decomposition 1st and 2nd compontent)
 - Create Enrichment Function (Time, Single subject IDs, CRP..)
+- Create a Color palette (list of colors)
 
 3. Run the TDA - Parameter Setting
 
