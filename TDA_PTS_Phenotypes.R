@@ -110,17 +110,16 @@ f.crp<-data.frame(ID=FupData$id, val=FupData$CRP)
 # ==========Create palette for enrichment (blue > green > yellow > orange > red)
 colfunc<-colorRampPalette(c("#00A3DD","#60C659","#FFBC21","#FF7F1E","#EF2B2D"))
 
-
-
-# Run TDA > grid search parameters 
-INTRVLS.SEQ<-seq(5,10,1)
-PRGNTG.SEQ<-seq(50,60,10)
-CLUST.BINS<-c(6,8,10)
-
-
 #==============
 #============== Run Mapper > set parameters and lens function
 #==============
+
+#  Set search parameters 
+INTRVLS.SEQ<-seq(5,10,1) 
+PRGNTG.SEQ<-seq(50,60,10)
+CLUST.BINS<-c(6,8,10)
+ 
+# Choose parameters
 
 ii<-2
 p<-2
