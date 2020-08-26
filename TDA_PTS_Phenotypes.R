@@ -1,9 +1,8 @@
-rm(list=ls())
 
 setwd("/Users/user/TDA_PSEUDOTIME/")
+
 library(TDAmapper)
 library(igraph)
-
 library(lsa)
 library(irlba)
 library(dplyr)
