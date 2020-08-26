@@ -1,6 +1,6 @@
 rm(list=ls())
 
-setwd("/Users/ariannadagliati/Desktop/TDA/")
+setwd("/Users/user/TDA_PSEUDOTIME/")
 library(TDAmapper)
 library(igraph)
 
