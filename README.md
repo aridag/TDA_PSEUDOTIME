@@ -3,35 +3,44 @@
 
 ### Instruction for running TDA + PTS on the example file [MyData](https://github.com/aridag/TDA_PSEUDOTIME/blob/master/MyDataSim.csv)
 
-1. Upload and preporcessing
+1. Upload and pre-processing
 - The example file is in the correct format:
-  - The first 3 columns idetify ids and dates 
+  - The first 3 columns identify ids and dates 
   - Dates are in the format YYYY-mm-dd
 - Create a time line for each subject starting from the first observation (minimum date)
 
 2. Compute Distance Matrix and Function
-- Choose a distance metric (Euclidean or Cosine), defualt is Cosine  
-- Create Lens Functions (Mean, Max, L-infinity centrality, Single Value Decomposition 1st and 2nd compontent)
+- Choose a distance metric (Euclidean or Cosine), default is Cosine  
+- Create Lens Functions (Mean, Max, L-infinity centrality, Single Value Decomposition 1st and 2nd component)
 - Create Enrichment Function (Time, Single subject IDs, CRP..)
-- Create a Color palette (list of colors)
+- Create a Colour palette (list of colours)
 
 3. Run the TDA - Parameter Setting
-Note that the code is also menat to be used for a grid search (testing differnt combination of parameters)
+Note that the code is also meant to be used for a grid search (testing different combination of parameters)
 - Create sequences of parameters:
   - INTRVLS.SEQ number of bins (index is ii)
   - PRGNTG.SEQ is how much the bins overlap (index is p)
-  - CLUST.BINS indicate how to cut the hierarchical clustering dendogram of (index is b) 
+  - CLUST.BINS indicate how to cut the hierarchical clustering dendrogram of (index is b) 
   
  - Run the 2d Mapper (two dimensions)
-  - Use 2 selected functions (defualt are L-infinity centrality + Single Value Decomposition 1st component) 
- 
-4. Enrich the topology
+  - Use 2 selected functions (default are L-infinity centrality + Single Value Decomposition 1st component) 
 
+
+4. Enrich the topology
+- Enrich nodes with functions (default is f.time, the mean time in each node). 
+
+The results of these first steps is a topological map as this one
 
 ![Topological Map](https://github.com/aridag/TDA_PSEUDOTIME/blob/master/TopologicalMap.png)
 
-5. Create the Minimum Spanning Tree and retrive Trajectories
+5. Create the Minimum Spanning Tree (MST) and retrieve Trajectories
+- Weight the edges of the network with mean time (mean time of the observation in the edges)
+- Create clusters based on the weighted edges
+- Create and plot the Minimum Spanning Tree
+
+The results of is a graph like this one
 
 ![Minimum Spanning Tree](https://github.com/aridag/TDA_PSEUDOTIME/blob/master/MSTExample.png)
 
-6. Assign each subject to the most similar trajectory
+6. Find Trajectories in the MST
+
