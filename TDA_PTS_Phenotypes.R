@@ -105,7 +105,7 @@ hist(as.numeric(f.time$val))
 f.idss<- data.frame(ID=FupData$id,PATID=FupData$covid_id)
 
 #Create as many function as needed to enrich the topology
-f.crp<-data.frame(ID=FupData$id, val=FupData$CRP)
+f.crp<-data.frame(ID=FupData$id,val=FupData$CRP)
 
 # ==========Create palette for enrichment (blue > green > yellow > orange > red)
 colfunc<-colorRampPalette(c("#00A3DD","#60C659","#FFBC21","#FF7F1E","#EF2B2D"))
@@ -114,21 +114,34 @@ colfunc<-colorRampPalette(c("#00A3DD","#60C659","#FFBC21","#FF7F1E","#EF2B2D"))
 #============== Run Mapper > set parameters and lens function
 #==============
 
-#  Set search parameters 
-INTRVLS.SEQ<-seq(5,10,1) 
+# Run TDA > grid search parameters 
+INTRVLS.SEQ<-seq(5,10,1)
 PRGNTG.SEQ<-seq(50,60,10)
 CLUST.BINS<-c(6,8,10)
- 
-# Choose parameters
+
+
+#====== Loop though different set of parameters (remember to un comment brackets after computing the MST)
+# for(ii in 1:length(INTRVLS.SEQ)){
+#   for (p in 1:length(PRGNTG.SEQ) ){
+#     for (b in 1:length(CLUST.BINS)){
+
+#====== Chose a fixed set
+# ==== num_intervals = c(6,6),
+# ==== percent_overlap = 60,
+# ==== num_bins_when_clustering = 8
 
 ii<-2
 p<-2
 b<-2
 
+#====== Run the Mapper Function
+
+
 F2<-mapper2D( distance_matrix= Dist.Mtrx,
               #============== choose the functions
               filter_values = list(LinfC,SVD2 ), #choose the functions
-              num_intervals = c(INTRVLS.SEQ[ii],INTRVLS.SEQ[ii]),
+             
+               num_intervals = c(INTRVLS.SEQ[ii],INTRVLS.SEQ[ii]),
               percent_overlap = PRGNTG.SEQ[p],
               num_bins_when_clustering = CLUST.BINS[b])
 
@@ -208,7 +221,7 @@ plot(CommunityCluster, F2.graph)
 minspantreeweights = mst(F2.graph, weights =   CommunityCluster$edge.betweenness)
 plot(minspantreeweights)
 
-
+#}}}
 
 
 #========
