@@ -105,7 +105,7 @@ hist(as.numeric(f.time$val))
 f.idss<- data.frame(ID=FupData$id,PATID=FupData$covid_id)
 
 #Create as many function as needed to enrich the topology
-f.crp<-data.frame(ID=FupData$id,val=FupData$C.reactive.protein..CRP...Normal.Sensitivity.)
+f.crp<-data.frame(ID=FupData$id, val=FupData$CRP)
 
 # ==========Create palette for enrichment (blue > green > yellow > orange > red)
 colfunc<-colorRampPalette(c("#00A3DD","#60C659","#FFBC21","#FF7F1E","#EF2B2D"))
