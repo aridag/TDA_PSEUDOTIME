@@ -69,8 +69,8 @@ There are two possibilities:
 -	Compute all the trajectories starting form starting nodes to ending nodes using the networks nodes betweenness value
 -	Choose the nodes, in this example for example the Ending Node can be 35
 
-9. Compute Jaccard similarity/ and assign subjects to the most similar trajectory
-- Compute the Jaccard similarity between the “real trajectory” of the subject and all the mined trajectories, assign the subject to the most similar one
+9. Compute similarity and assign subjects to the most similar trajectory
+- Compute Jaccard or Jaro-Winkler similarity between the “real trajectory” of the subject and all the mined trajectories, assign the subject to the most similar one
 
 10. The output is a data frame with two columns: subject id (covid_id) and assigned trajectory.
 
