@@ -47,7 +47,7 @@ The results of these first steps is a topological map as this one
 
 Here the topology enriched with cluster information
 
-![Minimum Spanning Tree](https://github.com/aridag/TDA_PSEUDOTIME/blob/master/TDAClusters.png)
+![Topological Map Cluster](https://github.com/aridag/TDA_PSEUDOTIME/blob/master/TDAClusters.png)
 
 
 
@@ -60,13 +60,16 @@ The results of is a graph like this one
 ![Minimum Spanning Tree](https://github.com/aridag/TDA_PSEUDOTIME/blob/master/MST.png)
 
 
+It is possible to visualize values of the Lab in the clusters
+![Lab Values](https://github.com/aridag/TDA_PSEUDOTIME/blob/master/LabInClusters.png)
+
 
 8. Find Trajectories in the MST
 There are two possibilities:
--	Compute all the trajectories starting form starting nodes (i.e. with degree equal to one) to ending nodes (in a very heuristic way I have defined them as those with a degree > median degree)
--	Choose the nodes, in this example it was clear that two good Ending Nodes candidates are node 18 and 25
+-	Compute all the trajectories starting form starting nodes to ending nodes using the networks nodes betweenness value
+-	Choose the nodes, in this example for example the Ending Node can be 35
 
-9. Compute Jaccard similarity and assign subjects to the most similar trajectory
+9. Compute Jaccard similarity/ and assign subjects to the most similar trajectory
 - Compute the Jaccard similarity between the “real trajectory” of the subject and all the mined trajectories, assign the subject to the most similar one
 
 10. The output is a data frame with two columns: subject id (covid_id) and assigned trajectory.
