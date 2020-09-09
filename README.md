@@ -34,7 +34,7 @@ Note that the code is also meant to be used for a grid search (testing different
 
 The results of these first steps is a topological map as this one
 
-![Topological Map](https://github.com/aridag/TDA_PSEUDOTIME/blob/master/TopologicalMap.png)
+![Topological Map](https://github.com/aridag/TDA_PSEUDOTIME/blob/master/TDA.png)
 
 
 5. Weight the edges of the network with mean time (mean time of the observation in the edges)
@@ -45,13 +45,19 @@ The results of these first steps is a topological map as this one
 - Enrich the topology with clustering infromation (colours)
 
 
+Here the topology enriched with cluster information
+
+![Minimum Spanning Tree](https://github.com/aridag/TDA_PSEUDOTIME/blob/master/TDAClusters.png)
+
+
+
 7. Create the Minimum Spanning Tree (MST) and retrieve Trajectories
 - Create clusters based on the weighted edges
 - Create and plot the Minimum Spanning Tree
 
 The results of is a graph like this one
 
-![Minimum Spanning Tree](https://github.com/aridag/TDA_PSEUDOTIME/blob/master/MSTExample.png)
+![Minimum Spanning Tree](https://github.com/aridag/TDA_PSEUDOTIME/blob/master/MST.png)
 
 
 
