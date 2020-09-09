@@ -388,6 +388,13 @@ MostSimilarTraj<-Similraty %>%
 #  slice(which.max(SJ))
 slice(which.max(JW))
 
+#Manual Regrouping of Trajectories
+MostSimilarTraj$trajNumbManual<-ifelse(MostSimilarTraj$trajNumb %in% c(1,2,6),"R>G","")
+MostSimilarTraj$trajNumbManual<-ifelse(MostSimilarTraj$trajNumb %in% c(3,4,5,7,8),"B>G",paste(MostSimilarTraj$trajNumbManual))
+MostSimilarTraj$trajNumbManual<-ifelse(MostSimilarTraj$trajNumb %in% c(9),"P>G",paste(MostSimilarTraj$trajNumbManual))
+
+
+
 #========
 #========OUTPUTs 
 #========
@@ -397,6 +404,21 @@ names(MyDataOutput)<-c("covid_id","assignedTrajectory")
 
 table(MyDataOutput$assignedTrajectory)
 
+#========Merge with data and Plot Trajectories 
+FupDataTraj<-merge(FupData,MostSimilarTraj, by=c("covid_id"),all.x = TRUE)
+
+pltList <- lapply(LabvaluesNames, function(i){
+ 
+  ggplot(FupDataTraj, aes(time, as.numeric(FupDataTraj[,i]), colour=as.factor(trajNumbManual))) + 
+    geom_smooth(aes(group=as.factor(trajNumbManual), fill=as.factor(trajNumbManual),
+                    method="loess", se=FALSE) )+
+    ggtitle(i)+ylab("")+xlab("")+  theme(legend.position="none",plot.title=element_text(size=8,hjust = 0.5))
+  
+})
+grid.arrange(grobs=pltList, ncol=4)
+
 
 #=====
+
+
 
