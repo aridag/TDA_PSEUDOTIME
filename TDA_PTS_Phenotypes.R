@@ -8,6 +8,17 @@ library(irlba)
 library(dplyr)
 library(philentropy)
 
+library(mice)
+library(ggplot2)
+library(RColorBrewer)
+
+# To check - not essential
+library(GrpString)
+library(heemod)
+library(gridExtra)
+library(CINNA)
+library(stringdist)
+
 #==========
 #==========PREPROCESS
 #==========
@@ -40,17 +51,29 @@ FupData$time<-as.numeric(FupData$day - FupData$FirstDate)
 FupData <- FupData[order(FupData$covid_id, FupData$time),]
 
 
+
+
+
 #==========
 #==========TDA SET-UP 
 #==========
 Labvalues <- as.data.frame(apply(FupData[,names(FupData) %in% LabvaluesNames], 2, as.numeric)) 
 
-#Scale continuous values
+#==========
+#==========Multiple Imputation (OPTIONAL - TBD)
+#==========
+tempData <- mice(Labvalues,m=5,maxit=50,meth='pmm',seed=500)
+Labvalues <- complete(tempData,1)
+
+#==========
+#==========Scale continuous values
+#==========
+
 Labvalues<-as.data.frame(lapply(Labvalues, as.numeric))
 matrix<-scale(Labvalues)
 
 # ========== 
-# ========== Create Distance Matrix 
+# ========== Create Distance Matrix (Cosine Selected) 
 # ========== 
 
 # ========== Euclidean distance
@@ -138,7 +161,7 @@ b<-2
 
 F2<-mapper2D( distance_matrix= Dist.Mtrx,
               #============== choose the functions
-              filter_values = list(LinfC,SVD2 ), #choose the functions
+              filter_values = list(SVD1 , SVD2 ), #choose the functions
              
                num_intervals = c(INTRVLS.SEQ[ii],INTRVLS.SEQ[ii]),
               percent_overlap = PRGNTG.SEQ[p],
@@ -152,7 +175,7 @@ F2.graph <- graph.adjacency(F2$adjacency, mode="undirected")
 #==============
 
 
-#===========COLORS > Enrichment (TIME ENRICHMENT)
+#===========COLORS > Enrichment (here the function f.time perform a TIME ENRICHMENT)
 y.mean.vertex <- data.frame()
 for (i in 1:F2$num_vertices){
   points.in.vertex <- F2$points_in_vertex[[i]]
@@ -210,8 +233,35 @@ plot(F2.graph)
 #======================Cluster - community detection
 #======================
 
-CommunityCluster <- edge.betweenness.community(F2.graph, weights = E(F2.graph)$value, directed = FALSE, bridges=TRUE)
+CommunityCluster <- edge.betweenness.community(F2.graph, 
+                                               weights = E(F2.graph)$value, 
+                                               directed = FALSE, bridges=TRUE)
+# Plot 
 plot(CommunityCluster, F2.graph)
+
+
+# Enrich the graph with  cluster colors 
+V(F2.graph)$color <- paste(CommunityCluster)
+
+# Make a palette of cluster colors
+Palette<-data.frame(Color= brewer.pal(length(unique(CommunityCluster$membership)), "Set1") ,
+                    Cluster=unique(CommunityCluster$membership))
+NodeColor<-data.frame(Node=F2$level_of_vertex, Cluster=CommunityCluster$membership)
+NodeColor<-merge(NodeColor,Palette, by=c("Cluster"))
+NodeColor<-NodeColor[order(NodeColor$Node),]
+
+# Plot with assigned palette
+V(F2.graph)$color <- NodeColor$Color
+plot(F2.graph)
+legend("topleft",
+       legend=Palette$Cluster,
+       col=Palette$Color, fill=Palette$Color, 
+       horiz=TRUE, box.lty=0,cex=0.8)
+
+# Create data frame nodes - cluster
+NodeClustes<-data.frame(Node=F2$level_of_vertex, Cluster=CommunityCluster$membership)
+
+
 
 
 #======================
@@ -219,6 +269,9 @@ plot(CommunityCluster, F2.graph)
 #======================
 minspantreeweights = mst(F2.graph, weights =   CommunityCluster$edge.betweenness)
 plot(minspantreeweights)
+legend("topright",legend=Palette$Cluster,
+       col=Palette$Color, fill=Palette$Color, horiz=TRUE, cex=0.8)
+
 
 #}}}
 
@@ -235,16 +288,39 @@ FupData$node<-as.numeric(FupData$node)
 
 
 
+#========
+#========Plot Values in Clusters
+#========
+
+#Plot Time
+ggplot(FupData[is.na(FupData$Cluster)==FALSE,],  aes(x=as.factor(Cluster),     y=as.numeric(time),      fill=as.factor(Cluster))) + 
+  geom_boxplot(alpha=0.8)+scale_fill_manual(values=Palette$Color)+ scale_color_manual(values=Palette$Color)+
+theme(legend.position="none",plot.title=element_text(size=8,hjust = 0.5))
+
+
+#Plot Lab Values
+pltList <- lapply(LabvaluesNames, function(i){
+  ggplot(FupData[is.na(FupData$Cluster)==FALSE,],aes(x=as.factor(Cluster), y=as.numeric(FupData[is.na(FupData$Cluster)==FALSE,i]),fill=as.factor(Cluster))) + 
+    geom_boxplot( alpha=0.8)+ ggtitle(i)+ylab("")+xlab("")+  scale_fill_manual(values=Palette$Color)+ scale_color_manual(values=Palette$Color)+
+    theme(legend.position="none",plot.title=element_text(size=8,hjust = 0.5))+
+     scale_y_continuous(limits = quantile(as.numeric(na.omit(FupData[is.na(FupData$Cluster)==FALSE,i])), c(0.1, 0.9)))
+  
+})
+
+grid.arrange(grobs=pltList, ncol=4)
+
+
 
 #========
-#========Find Trajectories in the MST >>> All the trajectory or choose the nodes 
+#======== Find Trajectories in the MST >>> All the trajectory or choose the nodes 
+#======== THIS STEP NEED MANUAL REVIEW > check the MST plot and TIME boxplots 
 #========
-StartingNodes<-V(minspantreeweights)[degree(minspantreeweights)==1]
-#EndingNodes<-V(minspantreeweights)[degree(minspantreeweights)>median(degree(minspantreeweights))]
+StartingNodes<-V(minspantreeweights)[betweenness(minspantreeweights)==min(betweenness(minspantreeweights))]
+EndingNodes<-V(minspantreeweights)[betweenness(minspantreeweights)==max(betweenness(minspantreeweights))]
 
 #=========== OR chose specific nodes in the MST
 #StartingNodes<-c(3,4,8,20,23)
-EndingNodes<-c(25,18)
+#EndingNodes<-c(25,18)
 
 Trajectories<-list()
 count<-1
@@ -274,6 +350,9 @@ for (i in 1:length(uniquePts)){
   trajOrig<-temp$node
   traj<- unique(temp$node)
   
+  # Define trajectoris among clusters (coarse granualrity)
+  trajCluster<-unique(temp$Cluster)
+
   tempRow<-data.frame()
   
   for(t in 1:length(Trajectories)){
@@ -281,25 +360,36 @@ for (i in 1:length(uniquePts)){
       
       temp=data.frame(covid_id=uniquePts[i],
                      trajPaz=paste(traj, collapse =" "),
+                     trajPazClusters=paste(na.omit(trajCluster), collapse =" "),
+
                       trajNumb=t,
                       trajElmnts=paste(Trajectories[[t]]$res[[1]], collapse=" "),
                       trajLenght=length(Trajectories[[t]]$res[[1]]),
+                      
                       SJ =simlJaccard(traj,Trajectories[[t]]$res[[1]]),
                       SI= simlIntersection(traj,Trajectories[[t]]$res[[1]]),
-                      SL= simlLength(traj,Trajectories[[t]]$res[[1]]))
+                      SL= simlLength(traj,Trajectories[[t]]$res[[1]])
+                     
+                      # Jaro-Winkler distance > take into account order
+                      # Values are comparable to Jaccard but formally is more correct (TBD)
+                      JW=  stringsim(paste(Trajectories[[t]]$res[[1]], collapse="_"),
+                                     paste(traj, collapse="_"),
+                                     method='jw')
+                     )
       tempRow<-rbind(tempRow,temp)
     }
   }
   Similraty<-rbind(Similraty,tempRow)
 }
 
-
+#Chose the most similar trajectory (JW similiarity is selected)
 MostSimilarTraj<-Similraty %>% 
   group_by(covid_id) %>% 
-  slice(which.max(SJ))
+#  slice(which.max(SJ))
+slice(which.max(JW))
 
 #========
-#========OUTPUT 
+#========OUTPUTs 
 #========
 
 MyDataOutput<-MostSimilarTraj[,c("covid_id","trajNumb")]
