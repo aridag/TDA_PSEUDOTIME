@@ -12,12 +12,13 @@ library(mice)
 library(ggplot2)
 library(RColorBrewer)
 
+library(gridExtra)
+library(stringdist)
+
 # To check - not essential
 library(GrpString)
 library(heemod)
-library(gridExtra)
 library(CINNA)
-library(stringdist)
 
 #==========
 #==========PREPROCESS
@@ -271,7 +272,6 @@ minspantreeweights = mst(F2.graph, weights =   CommunityCluster$edge.betweenness
 plot(minspantreeweights)
 legend("topright",legend=Palette$Cluster,
        col=Palette$Color, fill=Palette$Color, horiz=TRUE, cex=0.8)
-
 
 #}}}
 
