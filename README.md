@@ -1,4 +1,23 @@
+![Build & Publish Docker](https://github.com/aridag/TDA_PSEUDOTIME/workflows/Build%20&%20Publish%20Docker/badge.svg)
+
 # TDA_PSEUDOTIME
+
+## Set up
+
+To run the code, in the Terminal, navigate to this repository where you cloned it (e.g., `cd github-repos/TDA_PSEUDOTIME`), then run the following command:
+
+```
+docker run \
+  --name tda \
+  --detach --rm \
+  --env DISABLE_AUTH=true \
+  --publish 7009:8787 \
+  --volume $(pwd):/home/rstudio/tda \
+  docker.pkg.github.com/aridag/tda_pseudotime/tda
+```
+
+Then, navigating to [localhost:8787](http://localhost:8787) will open an RStudio browser for you to start running the R code.
+
 ## R code for temporal phenotyping via Topological Data Analysis and Pseudo Time 
 
 ### Instruction for running TDA + PTS on the example file [MyData](https://github.com/aridag/TDA_PSEUDOTIME/blob/master/MyDataSim.csv)
