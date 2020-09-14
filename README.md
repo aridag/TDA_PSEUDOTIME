@@ -4,12 +4,8 @@
 
 ## Set up
 
-The Docker image is automatically built and published by with GitHub Actions.
-Even though this repository is public, GitHub [requires](https://github.community/t5/GitHub-Actions/docker-pull-from-public-GitHub-Package-Registry-fail-with-quot/td-p/32782) authentication to download from the repository's [package registry](https://github.com/aridag/TDA_PSEUDOTIME/packages).
-Therefore, you will need a **GitHub account** to pull the image.
-
-Please use the following steps to [authenticate](https://help.github.com/en/packages/using-github-packages-with-your-projects-ecosystem/configuring-docker-for-use-with-github-packages#authenticating-to-github-packages) your local docker with your GitHub.
-Go to <https://github.com/settings/tokens> and create a new personal access token, selecting only the `read:packages` scope.
+If you don't already have a **GitHub account**, please create one.
+Then, go to <https://github.com/settings/tokens> and create a new personal access token, selecting the `read:packages` scope.
 You can name the token anything, for example, "docker login read-only token".
 Then run the following command in the Terminal, substituting your USERNAME and TOKEN from above:
 
@@ -19,7 +15,7 @@ docker login --username USERNAME --password TOKEN docker.pkg.github.com
 
 To run the code, navigate to this repository where you cloned it (e.g., `cd github-repos/TDA_PSEUDOTIME`), then run the following command:
 
-``` shell
+```shell
 docker run \
   --name tda \
   --detach --rm \
