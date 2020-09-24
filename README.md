@@ -3,37 +3,7 @@
 # TDA_PSEUDOTIME
 
 ## Set up
-1. Install Docker in your local machine: https://docs.docker.com/get-docker/
-
-2. Create a **GitHub account**.
-
-3. Go to <https://github.com/settings/tokens> and create a new personal access token, selecting the `read:packages` scope.
-You can name the token anything, for example, "docker login read-only token".
-Then run the following command in the Terminal, substituting your github USERNAME and TOKEN:
-
-```shell
-docker login --username USERNAME --password TOKEN docker.pkg.github.com
-```
-4. Navigate to this repository where you cloned it (e.g., `cd github-repos/TDA_PSEUDOTIME`), then run the following command:
-
-```shell
-docker run \
-  --name tda \
-  --detach --rm \
-  --env DISABLE_AUTH=true \
-  --publish 7009:8787 \
-  --volume $(pwd):/home/rstudio/tda \
-  docker.pkg.github.com/aridag/tda_pseudotime/tda
-```
-
-5. Navigate to [http://localhost:7009](http://localhost:7009). An RStudio browser should open up.
-
-6. In the R console, run
-```r
-setwd("~/tda/TDA_PSEUDOTIME")
-```
-
-That's it! You're ready to go!
+TODO
 
 ## R code for temporal phenotyping via Topological Data Analysis and Pseudo Time 
 
