@@ -25,11 +25,13 @@ library(stringdist)
 set.seed(1234)
 
 # brewer.pal(length(unique(CommunityCluster$membership)), "Set1")
-my_colors = c("#00A3DD", "#60C659", "#FFBC21", "#FF7F1E", "#Ef_sim_mapB2D")
+my_colors = c("#00A3DD", "#60C659", "#FFBC21", "#FF7F1E", "#EF2B2D")
+colfunc <- colorRampPalette(my_colors)
+
+
 my_file = "MyDataSim.csv"
 
 # Create palette for enrichment 
-colfunc <- colorRampPalette(my_colors)
 
 
 # Run TDA > grid search parameters
@@ -63,7 +65,9 @@ processed_data <- FupData %>%
   group_by(covid_id) %>% 
   mutate(first_date = min(day)) %>% 
   ungroup() %>% 
-  mutate(time = as.numeric(day - first_date, units = 'days')) %>% 
+  mutate(
+    id = as.integer(id),
+    time = as.numeric(day - first_date, units = 'days')) %>% 
   arrange(covid_id, time) %>% 
   mutate_at(vars(lab_value_names), as.numeric)
 
@@ -129,7 +133,6 @@ hist(as.numeric(f_time$val))
 
 #====== Run the Mapper Function
 
-
 f_sim_map <- mapper2D(
   distance_matrix = cosine_sim,
   filter_values = list(svd1 , svd2),
@@ -139,7 +142,8 @@ f_sim_map <- mapper2D(
 )
 
 f_graph <- make_graph(f_sim_map, f_time, 'clust_color')
-
+color_map <- color_vertex(f_sim_map, f_time)
+V(f_graph)
 
 #======================
 #======================Create and plot the MST
@@ -161,12 +165,49 @@ legend(
 # processed_data$node <- NA
 ### ASK ARIANNA HERE!!!!!!!!!!!!!!!!!!!!!!
 # what if a patient belongs to multiple nodes??????
-n_vertices <- f_sim_map$num_vertices
-for (i in seq.int(n_vertices)) {
-  points.in.vertex <- f_sim_map$points_in_vertex[[i]]
-  processed_data$node[processed_data$id %in% points.in.vertex] <- i
-}
-processed_data <- processed_data %>% 
+# n_vertices <- f_sim_map$num_vertices
+# for (i in seq.int(n_vertices)) {
+#   points.in.vertex <- f_sim_map$points_in_vertex[[i]]
+#   processed_data$node[processed_data$id %in% points.in.vertex] <- i
+# }
+#====== assigned_nodes is the list with all the nodes where the obsevation has been assigned
+
+# assigned_nodes <- list()
+# for (i in 1:nrow(processed_data)) {
+#   assigned_nodes[[i]] <-
+#     which(sapply(
+#       f_sim_map$points_in_vertex,
+#       function(X) processed_data$id[i] %in% X
+#     ))
+# }
+
+# UniquePts <- unique(processed_data$covid_id)
+# UniquePtsTrajectory <- list()
+# for (i in 1:length(UniquePts)) {
+#   nodes <- as.numeric(processed_data$id[processed_data$covid_id == UniquePts[i]])
+#   UniquePtsTrajectory[[i]] <- unique(unlist(assigned_nodes[nodes]))
+# }
+# UniquePtsTrajectory[[i]] contains the node ids that patient UniquePts[i] belongs
+# rowid_node_df %>% filter(covid_id == j) contains the node ids that patient j belongs
+# rowid_node_df %>% filter(covid_id == 99) %>% # i = 548
+#   pull(node_reps) %>% unique()
+rowid_to_nodes <- f_sim_map$points_in_vertex
+if (is.null(names(rowid_to_nodes)))
+  names(rowid_to_nodes) <- seq.int(length(rowid_to_nodes))
+node_reps <- rep(names(rowid_to_nodes), lengths(rowid_to_nodes))
+# # Check if this this is the desired vector
+# table(node_reps)
+# lengths(rowid_to_nodes)
+
+rowid_node_df <- data.frame(
+  id = unlist(rowid_to_nodes), 
+  node = as.integer(node_reps)
+) %>% 
+  left_join(processed_data %>% select(id, covid_id), by = 'id')
+
+# rowid_node_df %>% filter(id == 1)
+processed_data <- processed_data %>%
+  left_join(rowid_node_df, by = c('id', 'covid_id')) %>% 
   left_join(f_graph$node_color, by = 'node')
 
 #========
@@ -177,8 +218,8 @@ processed_data <- processed_data %>%
 processed_data %>% 
   ggplot(aes(x = cluster, y = time, fill = cluster)) +
   geom_boxplot(alpha = 0.8) + 
-  scale_fill_manual(values = Palette$color) + 
-  scale_color_manual(values = Palette$color) +
+  scale_fill_manual(values = f_graph$pal$color) + 
+  scale_color_manual(values = f_graph$pal$color) +
   theme(legend.position = "none",
         plot.title = element_text(size = 8, hjust = 0.5))
 
@@ -189,8 +230,8 @@ processed_data %>%
   ggplot(aes(x = cluster, y = lab_value, fill = cluster)) +
   geom_boxplot(alpha = 0.8) + 
   labs(x = NULL, y = NULL) +
-  scale_fill_manual(values = Palette$color) + 
-  scale_color_manual(values = Palette$color) +
+  scale_fill_manual(values = f_graph$pal$color) + 
+  scale_color_manual(values = f_graph$pal$color) +
   theme(legend.position = "none") +
   facet_wrap(~ Lab, scales = 'free_y')
 
@@ -208,22 +249,20 @@ starts_and_ends <- expand.grid(starting_nodes, ending_nodes)
 #starting_nodes<-c(3,4,8,20,23)
 #ending_nodes<-c(25,18)
 
-
-
 trajectories <- apply(starts_and_ends, 1, shortest_paths_func, mst_weights = minspantreeweights)
-
-# trajectories[[3]]$res
 
 unique_patients <- unique(processed_data$covid_id)
 
 similarity_ls <- list()
 
 for (i in unique_patients) {
-  patient_i <- processed_data %>% filter(covid_id == i)
-  traj <- unique(patient_i$node)
-  
+  traj <- processed_data %>% filter(covid_id == i) %>% pull(node)
+
   # Define trajectoris among clusters (coarse granularity)
-  trajcluster <- unique(patient_i$cluster)
+  trajcluster <- processed_data %>% 
+    filter(covid_id == i) %>% 
+    pull(cluster) %>% 
+    unique()
   
   temp <- list()
   
@@ -256,35 +295,16 @@ for (i in unique_patients) {
 similarity_df <- bind_rows(similarity_ls)
 
 #Chose the most similar trajectory (JW similiarity is selected)
-MostSimilarTraj <- similarity_df %>%
-  group_by(covid_id) %>%
-  #  slice(which.max(SJ))
-  slice(which.max(JW))
 
-# TO REPLACE
-#Manual Regrouping of trajectories
-# MostSimilarTraj$trajNumbManual <-
-#   ifelse(MostSimilarTraj$trajNumb %in% c(1, 2, 6), "R>G", "")
-# MostSimilarTraj$trajNumbManual <-
-#   ifelse(
-#     MostSimilarTraj$trajNumb %in% c(3, 4, 5, 7, 8),
-#     "B>G",
-#     paste(MostSimilarTraj$trajNumbManual)
-#   )
-# MostSimilarTraj$trajNumbManual <-
-#   ifelse(MostSimilarTraj$trajNumb %in% c(9),
-#          "P>G",
-#          paste(MostSimilarTraj$trajNumbManual))
 
 #Add info about clusters
 traj_cluster <- list()
 
 for(t in 1:length(trajectories)) {
-  
   if (length(trajectories[[t]]$res) > 0) {
     traj_res_1 <- trajectories[[t]]$res[[1]]
     temp <- data.frame(node = as.vector(traj_res_1)) %>% 
-      left_join(node_color, by = 'node')
+      left_join(f_graph$node_color, by = 'node')
     
     traj_cluster[[t]] <- data.frame(
       trajElmnts = paste(traj_res_1, collapse = " "),
@@ -297,28 +317,39 @@ traj_clusters <- bind_rows(traj_cluster)
 #Add cluster information into trajectories
 similarity_df <- left_join(similarity_df, traj_clusters, by=c("trajElmnts"))
 
+most_similar_traj <- similarity_df %>%
+  group_by(covid_id) %>%
+  slice(which.max(JW)) %>% # use Jaccard similarity for now
+  mutate(trajNumbManual = case_when(
+    trajNumb %in% c(1, 2, 6) ~ "R>G",
+    trajNumb %in% c(3, 4, 5, 7, 8) ~ "B>G",
+    trajNumb == 9 ~ "P>G",
+    TRUE ~ ""
+  ))
+
+
 
 #========
 #========OUTPUTs
 #========
 
-MyDataOutput <- similarity_df[, c("covid_id", "clusterTraj")]
-names(MyDataOutput) <- c("covid_id", "assignedTrajectory")
+data_out <- most_similar_traj %>% 
+  select(covid_id, trajNumbManual)
 
-table(MyDataOutput$assignedTrajectory)
+table(data_out$trajNumbManual)
 
 #========Merge with data and Plot trajectories
 processed_data_traj <-
-  left_join(processed_data, similarity_df, by = c("covid_id"))
+  left_join(processed_data, most_similar_traj, by = c("covid_id"))
 
 processed_data_traj %>% 
-  mutate(clusterTraj = as.factor(clusterTraj),
-         time = time) %>%
-  select(time, clusterTraj, lab_value_names) %>% 
-  tidyr::pivot_longer(- c(time, clusterTraj), 
+  mutate(trajNumbManual = as.factor(trajNumbManual), time) %>%
+  select(time, trajNumbManual, lab_value_names) %>% 
+  distinct() %>% 
+  tidyr::pivot_longer(- c(time, trajNumbManual), 
                       names_to = 'Lab', values_to = 'lab_value') %>% 
-  ggplot(aes(time, lab_value, colour = clusterTraj, 
-             group = clusterTraj, fill = clusterTraj)) +
+  ggplot(aes(time, lab_value, colour = trajNumbManual, 
+             group = trajNumbManual, fill = trajNumbManual)) +
   geom_smooth(method = "loess") +
   theme(legend.position = "none") +
   facet_wrap(~ Lab, scales = 'free_y')
