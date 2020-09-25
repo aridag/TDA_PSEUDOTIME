@@ -20,9 +20,9 @@ library(RColorBrewer)
 library(stringdist)
 library(tidyr)
 
-source('graph-funcs.R')
-source('math-funcs.R')
-source('processing.R')
+source('R/graph-funcs.R')
+source('R/math-funcs.R')
+source('R/processing.R')
 set.seed(1234)
 ```
 
