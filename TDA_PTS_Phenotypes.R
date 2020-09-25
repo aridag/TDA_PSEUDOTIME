@@ -10,7 +10,11 @@ library(RColorBrewer)
 
 library(gridExtra)
 library(stringdist)
+library(tidyr)
 
+source('graph-funcs.R')
+source('math-funcs.R')
+source('processing.R')
 # To check - not essential
 # library(GrpString)
 # library(heemod)
@@ -91,14 +95,11 @@ lab_values_mat <- processed_data[, lab_value_names] %>%
 #==========TDA SET-UP
 #==========
 
-# Matrix <- as.matrix(matrix)
-
+# Compute cosine similarity and SVD
+# Preparing for running TDA Mapper
 cosine_sim <- cosine_sim_func(lab_values_mat)
 
-# ========== Create Lens FUNCTIONS (works better with EUCLIDEAN)
-hist(apply(cosine_sim, 1, mean)) # mean
-hist(apply(cosine_sim, 1, max)) # L-infinity
-hist(apply(cosine_sim, 1, min))
+
 
 # ========== Create Lens FUNCTIONS (works better with COSINE)
 
@@ -131,7 +132,7 @@ hist(as.numeric(f_time$val))
 #============== Run Mapper > set parameters and lens function
 #==============
 
-#====== Run the Mapper Function
+#====== Run the TDA Mapper Function
 
 f_sim_map <- mapper2D(
   distance_matrix = cosine_sim,
@@ -142,191 +143,44 @@ f_sim_map <- mapper2D(
 )
 
 f_graph <- make_graph(f_sim_map, f_time, 'clust_color')
-color_map <- color_vertex(f_sim_map, f_time)
-V(f_graph)
+# color_map <- color_vertex(f_sim_map, f_time)
+# V(f_graph)
 
 #======================
 #======================Create and plot the MST
 #======================
 minspantreeweights <- igraph::mst(f_graph, weights = f_graph$clusters$edge.betweenness)
-plot(minspantreeweights)
-legend(
-  "topright",
-  legend = f_graph$pal$cluster,
-  col = f_graph$pal$color,
-  fill = f_graph$pal$color,
-  horiz = TRUE,
-  cex = 0.4
-)
 
 #========
 #========Assign Observations to a node in the network
 #========
-# processed_data$node <- NA
-### ASK ARIANNA HERE!!!!!!!!!!!!!!!!!!!!!!
-# what if a patient belongs to multiple nodes??????
-# n_vertices <- f_sim_map$num_vertices
-# for (i in seq.int(n_vertices)) {
-#   points.in.vertex <- f_sim_map$points_in_vertex[[i]]
-#   processed_data$node[processed_data$id %in% points.in.vertex] <- i
-# }
-#====== assigned_nodes is the list with all the nodes where the obsevation has been assigned
 
-# assigned_nodes <- list()
-# for (i in 1:nrow(processed_data)) {
-#   assigned_nodes[[i]] <-
-#     which(sapply(
-#       f_sim_map$points_in_vertex,
-#       function(X) processed_data$id[i] %in% X
-#     ))
-# }
-
-# UniquePts <- unique(processed_data$covid_id)
-# UniquePtsTrajectory <- list()
-# for (i in 1:length(UniquePts)) {
-#   nodes <- as.numeric(processed_data$id[processed_data$covid_id == UniquePts[i]])
-#   UniquePtsTrajectory[[i]] <- unique(unlist(assigned_nodes[nodes]))
-# }
-# UniquePtsTrajectory[[i]] contains the node ids that patient UniquePts[i] belongs
-# rowid_node_df %>% filter(covid_id == j) contains the node ids that patient j belongs
-# rowid_node_df %>% filter(covid_id == 99) %>% # i = 548
-#   pull(node_reps) %>% unique()
-rowid_to_nodes <- f_sim_map$points_in_vertex
-if (is.null(names(rowid_to_nodes)))
-  names(rowid_to_nodes) <- seq.int(length(rowid_to_nodes))
-node_reps <- rep(names(rowid_to_nodes), lengths(rowid_to_nodes))
-# # Check if this this is the desired vector
-# table(node_reps)
-# lengths(rowid_to_nodes)
-
-rowid_node_df <- data.frame(
-  id = unlist(rowid_to_nodes), 
-  node = as.integer(node_reps)
-) %>% 
-  left_join(processed_data %>% select(id, covid_id), by = 'id')
-
-# rowid_node_df %>% filter(id == 1)
-processed_data <- processed_data %>%
-  left_join(rowid_node_df, by = c('id', 'covid_id')) %>% 
-  left_join(f_graph$node_color, by = 'node')
-
-#========
-#========Plot Values in clusters
-#========
-
-#Plot Time
-processed_data %>% 
-  ggplot(aes(x = cluster, y = time, fill = cluster)) +
-  geom_boxplot(alpha = 0.8) + 
-  scale_fill_manual(values = f_graph$pal$color) + 
-  scale_color_manual(values = f_graph$pal$color) +
-  theme(legend.position = "none",
-        plot.title = element_text(size = 8, hjust = 0.5))
-
-processed_data %>% 
-  mutate(cluster = cluster) %>% 
-  select(cluster, lab_value_names) %>% 
-  tidyr::pivot_longer(- cluster, names_to = 'Lab', values_to = 'lab_value') %>% 
-  ggplot(aes(x = cluster, y = lab_value, fill = cluster)) +
-  geom_boxplot(alpha = 0.8) + 
-  labs(x = NULL, y = NULL) +
-  scale_fill_manual(values = f_graph$pal$color) + 
-  scale_color_manual(values = f_graph$pal$color) +
-  theme(legend.position = "none") +
-  facet_wrap(~ Lab, scales = 'free_y')
-
-
-#========
-#======== Find trajectories in the MST >>> All the trajectory or choose the nodes
-#======== THIS STEP NEED MANUAL REVIEW > check the MST plot and TIME boxplots
-#========
-mst_between <- betweenness(minspantreeweights)
-starting_nodes <- V(minspantreeweights)[mst_between == min(mst_between)]
-ending_nodes <- V(minspantreeweights)[mst_between == max(mst_between)]
-starts_and_ends <- expand.grid(starting_nodes, ending_nodes)
-
-#=========== OR chose specific nodes in the MST
-#starting_nodes<-c(3,4,8,20,23)
-#ending_nodes<-c(25,18)
-
-trajectories <- apply(starts_and_ends, 1, shortest_paths_func, mst_weights = minspantreeweights)
-
-unique_patients <- unique(processed_data$covid_id)
-
-similarity_ls <- list()
-
-for (i in unique_patients) {
-  traj <- processed_data %>% filter(covid_id == i) %>% pull(node)
-
-  # Define trajectoris among clusters (coarse granularity)
-  trajcluster <- processed_data %>% 
-    filter(covid_id == i) %>% 
-    pull(cluster) %>% 
-    unique()
-  
-  temp <- list()
-  
-  for (t in 1:length(trajectories)) {
-    if (length(trajectories[[t]]$res) > 0) {
-      traj_res_1 <- trajectories[[t]]$res[[1]]
-      temp[[t]] <- data.frame(
-        covid_id = i,
-        trajPaz = paste(traj, collapse = " "),
-        trajPazclusters = paste(na.omit(trajcluster), collapse = " "),
-        trajNumb = t,
-        trajElmnts = paste(traj_res_1, collapse = " "),
-        trajLenght = length(traj_res_1),
-        SJ = sim_jaccard(traj, traj_res_1),
-        SI = sim_intersection(traj, traj_res_1),
-        SL = sim_length(traj, traj_res_1),
-        # Jaro-Winkler distance > take into account order
-        # Values are comparable to Jaccard but formally is more correct (TBD)
-        JW =  stringsim(
-          paste(traj_res_1, collapse = "_"),
-          paste(traj, collapse = "_"),
-          method = 'jw'
-        )
-      )
-    }
-  }
-  similarity_ls[[i]] <- bind_rows(temp)
-}
-
-similarity_df <- bind_rows(similarity_ls)
-
-#Chose the most similar trajectory (JW similiarity is selected)
-
-
-#Add info about clusters
-traj_cluster <- list()
-
-for(t in 1:length(trajectories)) {
-  if (length(trajectories[[t]]$res) > 0) {
-    traj_res_1 <- trajectories[[t]]$res[[1]]
-    temp <- data.frame(node = as.vector(traj_res_1)) %>% 
-      left_join(f_graph$node_color, by = 'node')
-    
-    traj_cluster[[t]] <- data.frame(
-      trajElmnts = paste(traj_res_1, collapse = " "),
-      clusterTraj = paste(unique(temp$cluster), collapse = ">")
-    )
-  }
-}
-traj_clusters <- bind_rows(traj_cluster)
-
-#Add cluster information into trajectories
-similarity_df <- left_join(similarity_df, traj_clusters, by=c("trajElmnts"))
+#' THIS STEP NEED MANUAL REVIEW > check the MST plot and TIME boxplots
+out_trajectories <- find_trajectories(
+  minspantreeweights, processed_data, f_sim_map, f_graph)
+similarity_df <- out_trajectories[[1]]
+id_node_cluster <- out_trajectories[[2]]
 
 most_similar_traj <- similarity_df %>%
   group_by(covid_id) %>%
-  slice(which.max(JW)) %>% # use Jaccard similarity for now
+  # slice(which.max(JW)) %>% # use Jaro-Winkler similarity
+  slice(which.max(SJ)) %>% # use Jaccard similarity for now
   mutate(trajNumbManual = case_when(
     trajNumb %in% c(1, 2, 6) ~ "R>G",
     trajNumb %in% c(3, 4, 5, 7, 8) ~ "B>G",
     trajNumb == 9 ~ "P>G",
     TRUE ~ ""
   ))
-
+# most_similar_traj <- similarity_df %>%
+#   group_by(covid_id) %>%
+#   slice(which.max(JW)) %>% # use Jaccard similarity for now
+#   mutate(trajNumbManual = case_when(
+#     trajNumb %in% c(1, 4) ~ "R>B",
+#     trajNumb %in% c(2, 3) ~ "B",
+#     trajNumb %in% c(5,6 ) ~ "G>P>B",
+#     trajNumb %in% c(7,8 ) ~ "P>G>P>B",
+#     TRUE ~ ""
+#   ))
 
 
 #========
@@ -338,14 +192,62 @@ data_out <- most_similar_traj %>%
 
 table(data_out$trajNumbManual)
 
-#========Merge with data and Plot trajectories
-processed_data_traj <-
-  left_join(processed_data, most_similar_traj, by = c("covid_id"))
+## Visualization
 
-processed_data_traj %>% 
+# ========== Create Lens FUNCTIONS (works better with EUCLIDEAN)
+hist(apply(cosine_sim, 1, mean)) # mean
+hist(apply(cosine_sim, 1, max)) # L-infinity
+hist(apply(cosine_sim, 1, min))
+
+plot_dat <- processed_data %>% 
+  left_join(id_node_cluster %>% distinct(covid_id, id, cluster), 
+            by = c('id', 'covid_id'))
+# rowid_node_df <- convert_id_to_node(f_sim_map, processed_data)
+# processed_data <- processed_data %>%
+#   left_join(rowid_node_df, by = c('id', 'covid_id')) %>% 
+#   left_join(f_graph$node_color, by = 'node') %>% 
+#   select(covid_id, node, cluster, time) %>% 
+#   distinct()
+
+
+plot_dat %>% 
+  ggplot(aes(x = cluster, y = time, fill = cluster)) +
+  geom_boxplot(alpha = 0.8) + 
+  scale_fill_manual(values = f_graph$pal$color) + 
+  scale_color_manual(values = f_graph$pal$color) +
+  theme(legend.position = "none",
+        plot.title = element_text(size = 8, hjust = 0.5))
+
+plot_dat %>% 
+  select(cluster, lab_value_names) %>% 
+  tidyr::pivot_longer(- cluster, names_to = 'Lab', values_to = 'lab_value') %>% 
+  ggplot(aes(x = cluster, y = lab_value, fill = cluster)) +
+  geom_boxplot(alpha = 0.8) + 
+  labs(x = NULL, y = NULL) +
+  scale_fill_manual(values = f_graph$pal$color) + 
+  scale_color_manual(values = f_graph$pal$color) +
+  theme(legend.position = "none") +
+  facet_wrap(~ Lab, scales = 'free_y')
+
+
+plot(minspantreeweights)
+legend(
+  "topright",
+  legend = f_graph$pal$cluster,
+  col = f_graph$pal$color,
+  fill = f_graph$pal$color,
+  horiz = TRUE,
+  cex = 0.4
+)
+
+#========Merge with data and Plot trajectories
+processed_data_traj <- processed_data %>% 
+  left_join(most_similar_traj, by = c("covid_id")) %>% 
   mutate(trajNumbManual = as.factor(trajNumbManual), time) %>%
   select(time, trajNumbManual, lab_value_names) %>% 
-  distinct() %>% 
+  distinct()
+
+processed_data_traj  %>% 
   tidyr::pivot_longer(- c(time, trajNumbManual), 
                       names_to = 'Lab', values_to = 'lab_value') %>% 
   ggplot(aes(time, lab_value, colour = trajNumbManual, 

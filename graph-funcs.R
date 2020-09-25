@@ -18,7 +18,6 @@ make_graph <- function(f_sim_map, f_time, color_method = 'clust_color') {
   f_graph
 }
 
-
 #' Color nodes of graph given coloring method.
 #'
 #' @param f_sim_map TDAmapper object
@@ -69,7 +68,6 @@ color_graph <- function(
   }
   f_graph
 }
-
 
 
 #' Resize the nodes of graph given the number of points it contains
@@ -152,8 +150,8 @@ color_vertex <- function(f_sim_map, f_time){
   color_map <- bind_rows(y.mean.vertex) %>% 
     arrange(value) %>% 
     mutate(colors = unique(.$value) %>% length() %>% colfunc()) %>% 
-    # arrange(as.numeric(id)) # should it be this instead???
-    arrange(id)
+    arrange(as.numeric(id))
+    # check that the order of the V(f_graph) vertices is the same of the clrMap$id
 }
 
 #' Detect community structure based on edge betweeness.
@@ -178,7 +176,6 @@ commu_clus <- function(f_graph, directed = FALSE, bridges = TRUE, ...){
     ...
   )
 }
-
 
 #' Get cluster colors for nodes.
 #'
