@@ -2,8 +2,10 @@
 
 # TDA_PSEUDOTIME
 
-## Set up
-TODO
+## :star2: UPDATED: 2020-10-02 :star2:
+Please navigate to [github.com/trang1618/tdapseudotime](https://github.com/trang1618/tdapseudotime) for the latest version of the package.
+
+Also, please note that the current [Phase2.1TDAPseudotimeRPackage](https://github.com/covidclinical/Phase2.1TDAPseudotimeRPackage) on github.com/covidclinical is still under development. Hang tight until we have a well-defined workflow to apply on the data from your site!
 
 ## R code for temporal phenotyping via Topological Data Analysis and Pseudo Time 
 
